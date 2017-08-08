@@ -50,11 +50,12 @@ The code is located in "Camera calibration" section of the [Jupyter Notebook](ad
 
 I used a combination of color and gradient thresholds to generate a binary image:
 
-1. Sobel Operator with `x` direction applied to the S channel (function `asobel_thresh()`)
+1. Sobel Operator with `x` and `y` direction applied to the S channel (function `asobel_thresh()`)
 2. Magnitude of the Gradient applied to the S channel (function `mag_thresh()`)
 3. Direction of the Gradient applied to the S channel (function `dir_threshold()`)
 4. Red channel threshold (function `threshold_pipeline()`)
-5. Saturation channel threshold (function `threshold_pipeline()`)
+5. Blue channel threshold (function `threshold_pipeline()`)
+6. Saturation channel threshold (function `threshold_pipeline()`)
 
 ![](examples/threshold.png)
 
@@ -92,16 +93,20 @@ I verified that my perspective transform was working as expected by drawing the 
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-I used 2 sliding windows (for left and right lines) to detect lines on the warped 'bird-eye view' image. The code lives in `find_lanes()` function, which is located in
+For the first frame, I used 2 sliding windows (for left and right lines) to detect lines on the warped 'bird-eye view' image. Subsequent frames use line locations from previous frames plus some margin. The code lives in `LaneFinder.detect_lines()` method, which is located in
 "Processing Each Image" section of the [Jupyter Notebook](advanced_line_detection.ipynb).
 
-![](examples/detect_lines.png)
+First frame:
 
-_NOTE: there's a weird bug when I plotted the sliding window visualisation - some green rectangles are missing edges. Meanwhile on the final video (see below) everything is rendered correctly._
+![](examples/detect_lines1.png)
+
+Second frame:
+
+![](examples/detect_lines2.png)
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-Same function `find_lanes()`, last 5 lines. The curvature is calculated using this formula:
+Same function `LaneFinder.detect_lines()`, last 5 lines. The curvature is calculated using this formula:
 
 ![](examples/curvature_formula_1.png)
 
@@ -123,7 +128,7 @@ I implemented this step in the function `draw_line_detection()` in the section "
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-Here's a [link to my video result](output.mp4). Also, [link to YouTube](https://youtu.be/iKgGf_j9yJA).
+Here's a [link to my video result](output.mp4). Also, [link to YouTube](https://youtu.be/ln0_TA9etVY).
 
 ---
 
@@ -131,6 +136,8 @@ Here's a [link to my video result](output.mp4). Also, [link to YouTube](https://
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Lane finding algorithm definitely can be improved. Due to limited time I had for this project, I run sliding window search for every frame instead of finding lanes based on previous frames. That would make algorithm less wobbly because it would have a region of interest to search based on previous frames.
+Missing line (when one of two lines cannot be found) recovery can be improved: current version uses simple "if not found, use data from the previous frame" logic, that's not ideal, the detected line are sometimes a bit wobbly (nothing critical though). Instead, the pipeline could use data extrapolation based on few previous frames - this would make detected lines smoother.
 
-The pipeline might fail if there are sharp lines in the middle of the lane (tire marks, temporary line marks in construction zones, uneven pavement). It would definitely fail if lane splits in two. Also, it assumes the road is flat, which is not true for mountain roads.
+Another imporvement is to apply addaptive thresholds so the code would perform better in too bright/too dark/lots of shadows conditions.
+
+The pipeline would definitely fail if the lane splits in two (for instance, a hightway exit). Also, it assumes the road is flat, which is not true for mountain roads.
